@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pi NOVA</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+body{background:#f5f5f5;color:#222;max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:70px}
+header{background:linear-gradient(135deg,#6a0dad,#9b30ff);color:#fff;padding:16px;text-align:center}
+header h1{font-size:1.4rem;font-weight:700}
+header p{font-size:0.8rem;opacity:0.85}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:space-around;padding:8px 0;z-index:100}
+nav button{background:none;border:none;display:flex;flex-direction:column;align-items:center;font-size:0.65rem;color:#888;cursor:pointer;gap:2px}
+nav button.active{color:#6a0dad}
+nav button span{font-size:1.3rem}
+.screen{display:none;padding:16px}
+.screen.active{display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.card h3{font-size:1rem;margin-bottom:6px;color:#6a0dad}
+.card p{font-size:0.85rem;color:#555}
+.btn{background:#6a0dad;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:0.9rem;cursor:pointer;width:100%;margin-top:8px}
+.btn-outline{background:#fff;color:#6a0dad;border:2px solid #6a0dad;border-radius:8px;padding:10px 18px;font-size:0.9rem;cursor:pointer;width:100%;margin-top:8px}
+.badge{background:#ffcc00;color:#333;border-radius:20px;padding:2px 8px;font-size:0.7rem;font-weight:700;display:inline-block;margin-left:6px}
+.filter-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
+.filter-btn{background:#fff;border:1px solid #6a0dad;color:#6a0dad;border-radius:20px;padding:5px 12px;font-size:0.78rem;white-space:nowrap;cursor:pointer}
+.filter-btn.active{background:#6a0dad;color:#fff}
+.listing{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer}
+.listing h4{font-size:0.95rem;color:#222}
+.listing .price{color:#6a0dad;font-weight:700;font-size:0.9rem;margin-top:4px}
+.listing .meta{font-size:0.75rem;color:#888;margin-top:2px}
+.chat-box{background:#f0e6ff;border-radius:12px;padding:12px;margin-top:12px}
+.chat-msg{background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;font-size:0.83rem}
+.chat-input{display:flex;gap:8px;margin-top:8px}
+.chat-input input{flex:1;border:1px solid #ddd;border-radius:8px;padding:8px;font-size:0.85rem}
+.chat-input button{background:#6a0dad;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer}
+.stat{text-align:center;padding:10px}
+.stat .num{font-size:1.8rem;font-weight:700;color:#6a0dad}
+.stat .label{font-size:0.75rem;color:#888}
+.rpc-bar{background:#6a0dad;color:#fff;padding:10px 16px;border-radius:10px;margin-bottom:14px;text-align:center;font-size:0.85rem}
+input,select,textarea{width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:0.9rem;margin-top:6px}
+label{font-size:0.85rem;color:#555;margin-top:10px;display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌟 Pi NOVA</h1>
+  <p>Marketplace Block Chain Wishes International</p>
+</header>
+
+<div id="screen-home" class="screen active">
+  <div class="rpc-bar">📡 Pi Network — En attente d'approbation Mainnet</div>
+  <div class="card">
+    <h3>Bienvenue sur Pi NOVA</h3>
+    <p>La marketplace de l'inclusion financière africaine. Achetez, vendez et développez votre business avec Pi.</p>
+    <button class="btn" onclick="showScreen('marketplace')">Explorer le Marketplace →</button>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:12px">
+    <div class="card" style="flex:1;text-align:center">
+      <div class="stat"><div class="num">230+</div><div class="label">Pays</div></div>
+    </div>
+    <div class="card" style="flex:1;text-align:center">
+      <div class="stat"><div class="num">60M+</div><div class="label">Pionniers</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>💎 Premium <span class="badge">1 Pi/mois</span></h3>
+    <p>Accédez aux formations avancées, publiez des annonces illimitées et obtenez un badge vendeur vérifié.</p>
+    <button class="btn" onclick="payPremium()">Passer Premium</button>
+  </div>
+  <div class="card">
+    <h3>🔐 Connexion Pi</h3>
+    <p id="auth-status">Non connecté</p>
+    <button class="btn" onclick="piAuth()">Se connecter avec Pi</button>
+  </div>
+</div>
+
+<div id="screen-marketplace" class="screen">
+  <h2 style="margin-bottom:12px;color:#6a0dad">Marketplace</h2>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterCat(this,'tous')">Tous</button>
+    <button class="filter-btn" onclick="filterCat(this,'agriculture')">🌾 Agriculture</button>
+    <button class="filter-btn" onclick="filterCat(this,'artisanat')">🎨 Artisanat</button>
+    <button class="filter-btn" onclick="filterCat(this,'services')">💼 Services</button>
+    <button class="filter-btn" onclick="filterCat(this,'tech')">📱 Tech</button>
+    <button class="filter-btn" onclick="filterCat(this,'alimentation')">🍎 Alimentation</button>
+  </div>
+  <div id="listings"></div>
+  <button class="btn-outline" onclick="showScreen('publish')">+ Publier une annonce</button>
+</div>
+
+<div id="screen-detail" class="screen">
+  <button onclick="showScreen('marketplace')" style="background:none;border:none;color:#6a0dad;font-size:0.9rem;cursor:pointer;margin-bottom:10px">← Retour</button>
+  <div class="card">
+    <h3 id="detail-title"></h3>
+    <p id="detail-desc"></p>
+    <div class="price" id="detail-price"></div>
+    <div class="meta" id="detail-meta"></div>
+    <button class="btn" onclick="payListing()">💰 Acheter avec Pi</button>
+  </div>
+  <div class="chat-box">
+    <strong style="font-size:0.9rem">💬 Contacter le vendeur</strong>
+    <div id="chat-messages">
+      <div class="chat-msg">Vendeur: Bonjour! Comment puis-je vous aider?</div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chat-input" placeholder="Votre message...">
+      <button onclick="sendMsg()">▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-publish" class="screen">
+  <button onclick="showScreen('marketplace')" style="background:none;border:none;color:#6a0dad;font-size:0.9rem;cursor:pointer;margin-bottom:10px">← Retour</button>
+  <div class="card">
+    <h3>Publier une annonce</h3>
+    <label>Titre</label>
+    <input type="text" id="pub-title" placeholder="Ex: Sacs artisanaux en cuir">
+    <label>Description</label>
+    <textarea id="pub-desc" rows="3" placeholder="Décrivez votre produit..."></textarea>
+    <label>Prix (en Pi)</label>
+    <input type="number" id="pub-price" placeholder="Ex: 2.5">
+    <label>Catégorie</label>
+    <select id="pub-cat">
+      <option value="artisanat">🎨 Artisanat</option>
+      <option value="agriculture">🌾 Agriculture</option>
+      <option value="services">💼 Services</option>
+      <option value="tech">📱 Tech</option>
+      <option value="alimentation">🍎 Alimentation</option>
+    </select>
+    <label>Pays</label>
+    <select id="pub-country">
+      <option value="CM">🇨🇲 Cameroun</option>
+      <option value="SN">🇸🇳 Sénégal</option>
+      <option value="CI">🇨🇮 Côte d'Ivoire</option>
+      <option value="NG">🇳🇬 Nigeria</option>
+      <option value="GH">🇬🇭 Ghana</option>
+      <option value="RU">🇷🇺 Russie</option>
+      <option value="FR">🇫🇷 France</option>
+      <option value="OTHER">🌍 Autre pays</option>
+    </select>
+    <button class="btn" onclick="publishListing()">Publier l'annonce</button>
+  </div>
+</div>
+
+<div id="screen-formation" class="screen">
+  <h2 style="margin-bottom:12px;color:#6a0dad">Formation</h2>
+  <div class="card">
+    <h3>🚀 Débuter sur Pi NOVA</h3>
+    <p>Apprenez à créer votre première annonce et à recevoir des paiements Pi.</p>
+    <button class="btn">Commencer — Gratuit</button>
+  </div>
+  <div class="card">
+    <h3>📈 Développer son business <span class="badge">Premium</span></h3>
+    <p>Stratégies avancées pour les PME africaines: pricing, visibilité, fidélisation.</p>
+    <button class="btn" onclick="payPremium()">Débloquer — 1 Pi/mois</button>
+  </div>
+  <div class="card">
+    <h3>🌐 Commerce international <span class="badge">Premium</span></h3>
+    <p>Vendre dans 230+ pays, gestion des devises, logistique internationale.</p>
+    <button class="btn" onclick="payPremium()">Débloquer — 1 Pi/mois</button>
+  </div>
+</div>
+
+<div id="screen-profil" class="screen">
+  <div class="card" style="text-align:center">
+    <div style="font-size:3rem">👤</div>
+    <h3 id="profil-name">Non connecté</h3>
+    <p id="profil-uid" style="font-size:0.75rem;color:#888"></p>
+    <button class="btn" onclick="piAuth()">Connecter mon compte Pi</button>
+  </div>
+  <div class="card">
+    <h3>Mes annonces</h3>
+    <div id="my-listings"><p style="color:#888;font-size:0.85rem">Aucune annonce pour le moment.</p></div>
+  </div>
+  <div class="card">
+    <h3>Statut</h3>
+    <p id="profil-status">Compte standard — <a href="#" onclick="payPremium()" style="color:#6a0dad">Passer Premium</a></p>
+  </div>
+</div>
+
+<div id="screen-plus" class="screen">
+  <div class="card">
+    <h3>ℹ️ À propos de Pi NOVA</h3>
+    <p>Pi NOVA est la marketplace officielle de Block Chain Wishes International, dédiée à l'inclusion financière des PME africaines et des marchands locaux.</p>
+  </div>
+  <div class="card">
+    <h3>📋 Conditions d'utilisation</h3>
+    <p>Pi NOVA respecte les Developer Guidelines de Pi Network. Tous les paiements sont en Pi. Les prix sont fixés librement par les vendeurs. Données personnelles conformes GDPR.</p>
+  </div>
+  <div class="card">
+    <h3>🌍 Langues</h3>
+    <p>Disponible en Français | English | Русский (à venir)</p>
+  </div>
+  <div class="card">
+    <h3>📞 Support</h3>
+    <p>Block Chain Wishes International<br>Direction: Dr. Mba T. Yannick Zobel (@mbazobel)</p>
+  </div>
+</div>
+
+<nav>
+  <button class="active" id="nav-home" onclick="showScreen('home')"><span>🏠</span>Accueil</button>
+  <button id="nav-marketplace" onclick="showScreen('marketplace')"><span>🛒</span>Marché</button>
+  <button id="nav-formation" onclick="showScreen('formation')"><span>📚</span>Formation</button>
+  <button id="nav-profil" onclick="showScreen('profil')"><span>👤</span>Profil</button>
+  <button id="nav-plus" onclick="showScreen('plus')"><span>⋯</span>Plus</button>
+</nav>
+
+<script>
+try {
+  Pi.init({ version: "2.0" });
+} catch(e) {
+  console.error("SDK Pi indisponible (hors Pi Browser)", e);
+}
+
+const defaultListings = [
+  {id:1,title:"Sacs en raphia artisanaux",desc:"Sacs faits main par des artisanes camerounaises. Haute qualité, designs uniques.",price:2.5,cat:"artisanat",country:"CM",seller:"Marie K."},
+  {id:2,title:"Cacao bio du Cameroun",desc:"Fèves de cacao certifiées bio, récolte 2026. Idéal pour chocolatiers.",price:5,cat:"agriculture",country:"CM",seller:"Jean F."},
+  {id:3,title:"Formation Excel avancé",desc:"Formation complète en ligne, 10 heures de vidéo. Certificat inclus.",price:1.5,cat:"services",country:"SN",seller:"Aminata D."},
+  {id:4,title:"Réparation smartphones",desc:"Réparation toutes marques. Garantie 3 mois sur les pièces.",price:3,cat:"tech",country:"CI",seller:"Koffi A."},
+  {id:5,title:"Huile de palme rouge",desc:"Huile naturelle non raffinée. Production familiale, 5L.",price:1.2,cat:"alimentation",country:"GH",seller:"Kwame O."},
+  {id:6,title:"Site web professionnel",desc:"Création site vitrine en 7 jours. Design moderne, mobile friendly.",price:8,cat:"services",country:"RU",seller:"Ivan P."}
+];
+
+let listings = JSON.parse(localStorage.getItem('pinova_listings')) || defaultListings;
+let currentCat = 'tous';
+let currentListing = null;
+
+window.addEventListener('load', () => {
+  if(localStorage.getItem('pinova_premium') === 'true') updatePremiumUI();
+});
+
+function renderListings(){
+  const container = document.getElementById('listings');
+  const filtered = currentCat === 'tous' ? listings : listings.filter(l=>l.cat===currentCat);
+  container.innerHTML = filtered.map(l=>`
+    <div class="listing" onclick="showDetail(${l.id})">
+      <h4>${l.title}</h4>
+      <div class="price">π ${l.price}</div>
+      <div class="meta">📍 ${l.country} · ${l.seller}</div>
+    </div>
+  `).join('');
+}
+
+function filterCat(btn, cat){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = cat;
+  renderListings();
+}
+
+function showDetail(id){
+  currentListing = listings.find(l=>l.id===id);
+  document.getElementById('detail-title').textContent = currentListing.title;
+  document.getElementById('detail-desc').textContent = currentListing.desc;
+  document.getElementById('detail-price').textContent = 'π ' + currentListing.price;
+  document.getElementById('detail-meta').textContent = '📍 ' + currentListing.country + ' · Vendeur: ' + currentListing.seller;
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-msg">Vendeur: Bonjour! Comment puis-je vous aider?</div>';
+  showScreen('detail');
+}
+
+function sendMsg(){
+  const input = document.getElementById('chat-input');
+  if(!input.value.trim()) return;
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML += `<div class="chat-msg" style="background:#e8d5ff">Vous: ${input.value}</div>`;
+  input.value = '';
+  setTimeout(()=>{
+    msgs.innerHTML += `<div class="chat-msg">Vendeur: Merci pour votre message, je vous réponds bientôt!</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 800);
+}
+
+function publishListing(){
+  const title = document.getElementById('pub-title').value.trim();
+  const price = document.getElementById('pub-price').value;
+  if(!title || !price){ alert('Remplissez le titre et le prix.'); return; }
+  const newL = {
+    id: Date.now(),
+    title: title,
+    desc: document.getElementById('pub-desc').value,
+    price: parseFloat(price),
+    cat: document.getElementById('pub-cat').value,
+    country: document.getElementById('pub-country').value,
+    seller: 'Moi'
+  };
+  listings.push(newL);
+  localStorage.setItem('pinova_listings', JSON.stringify(listings));
+  alert('Annonce publiée avec succès !');
+  document.getElementById('pub-title').value = '';
+  document.getElementById('pub-price').value = '';
+  document.getElementById('pub-desc').value = '';
+  showScreen('marketplace');
+}
+
+function piAuth(){
+  Pi.authenticate(['username','payments'], onIncompletePayment)
+    .then(auth=>{
+      document.getElementById('auth-status').textContent = '✅ Connecté: @' + auth.user.username;
+      document.getElementById('profil-name').textContent = '@' + auth.user.username;
+      document.getElementById('profil-uid').textContent = 'UID: ' + auth.user.uid;
+    }).catch(e=>{
+      alert('Connexion échouée ou hors Pi Browser.');
+      console.error(e);
+    });
+}
+
+function onIncompletePayment(payment){
+  console.log('Paiement incomplet — traitement serveur requis:', payment);
+}
+
+function payListing(){
+  if(!currentListing) return;
+  Pi.createPayment({
+    amount: currentListing.price,
+    memo: 'Pi NOVA - ' + currentListing.title,
+    metadata: { listing_id: currentListing.id }
+  },{
+    onReadyForServerApproval: id => console.log('Approbation serveur requise:', id),
+    onReadyForServerCompletion: (id, txid) => alert('Paiement validé ! TxID: ' + txid),
+    onCancel: id => console.log('Annulé:', id),
+    onError: (e) => console.error('Erreur paiement:', e)
+  });
+}
+
+function payPremium(){
+  Pi.createPayment({
+    amount: 1,
+    memo: 'Pi NOVA Premium - 1 mois',
+    metadata: { type: 'premium' }
+  },{
+    onReadyForServerApproval: id => console.log('Premium — approbation serveur:', id),
+    onReadyForServerCompletion: (id, txid) => {
+      localStorage.setItem('pinova_premium', 'true');
+      updatePremiumUI();
+      alert('Bienvenue en Premium Pi NOVA !');
+    },
+    onCancel: id => console.log('Premium annulé'),
+    onError: (e) => console.error('Erreur Premium:', e)
+  });
+}
+
+function updatePremiumUI(){
+  const el = document.getElementById('profil-status');
+  if(el) el.innerHTML = '💎 <strong>Compte Premium Actif</strong>';
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const navBtn = document.getElementById('nav-'+name);
+  if(navBtn) navBtn.classList.add('active');
+  if(name==='marketplace') renderListings();
+}
+
+renderListings();
+</script>
+</body>
+</html>
